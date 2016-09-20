@@ -6,7 +6,7 @@ module.exports = {
     extensions: ['', '.scss', '.ts', '.js'],
  //   mainFields: [ 'browser', 'module', 'main']
   },
-  entry: './app/app.module.ts',
+  entry: './app/main.aot.ts',
   output: {
     path: "./dist",
     publicPath: 'dist/',
@@ -14,9 +14,7 @@ module.exports = {
   },
   plugins: [
     new NgcWebpackPlugin({
-      project: './tsconfig.json',
-      appRoot: path.resolve(__dirname, 'app'),
-      entryModule: './app.module#AppModule'
+      project: './tsconfig.json'
     })
   ],
   module: {

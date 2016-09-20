@@ -6,12 +6,12 @@ import { RouterModule } from '@angular/router'
 import { AppComponent }   from './app.component';
 
 @NgModule({
-  declarations: [
-    AppComponent
-  ],
-  imports: [
-    RouterModule.forRoot([{path: "lazy", loadChildren: "./lazy.module#LazyModule"}])
-  ],
-  bootstrap: [AppComponent]
+  // declarations: [
+  //   AppComponent
+  // ],
+  // imports: [
+  //   RouterModule.forRoot([{path: "lazy", loadChildren: "./lazy.module#LazyModule"}])
+  // ],
+  // bootstrap: [AppComponent]
 })
 export class AppModule { }

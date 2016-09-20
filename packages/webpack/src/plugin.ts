@@ -1,4 +1,5 @@
 //@angular/webpack plugin main
+import 'reflect-metadata';
 import {ReflectiveInjector, OpaqueToken} from '@angular/core'
 import * as ts from 'typescript'
 import * as ngCompiler from '@angular/compiler-cli'
@@ -7,10 +8,8 @@ import * as path from 'path'
 import * as fs from 'fs'
 import {WebpackResourceLoader} from './resource_loader'
 import {createCodeGenerator} from './codegen'
-import * as astTools from '../../../dist/ast-tools/index'
 import {createCompilerHost} from './compiler'
 import * as utils from './utils'
-import * as util from 'util'
 import * as _ from 'lodash'
 
 function debug(...args){
@@ -33,7 +32,6 @@ export interface AngularWebpackPluginOptions {
 
 const noTransformExtensions = ['.html', '.css']
 
-
 export class NgcWebpackPlugin {
   rootModule: string;
   rootModuleName: string;
@@ -45,7 +43,6 @@ export class NgcWebpackPlugin {
 	private injector: ReflectiveInjector;
 
 	constructor(public options:any = {}){
-
     const tsConfig = this._readConfig(options.project);
        const plugin = this;
 
@@ -55,19 +52,24 @@ export class NgcWebpackPlugin {
     }
     const [rootModule, rootNgModule] = ngcConfig.entryModule.split('#');
 
-    this.rootModule = path.resolve(rootModule + '.ts');
+    this.rootModule = rootModule;
     this.rootModuleName = rootNgModule;
 
-    const compilerHost = createCompilerHost(tsConfig);
+    const compilerHost = ts.createCompilerHost(tsConfig.compilerOptions, true);
 
+    console.log("createProgram", rootModule, this.rootModule, tsConfig.compilerOptions);
     //create a program that references the main JIT entry point (eg the main AppModule), as we need that reference for codegen
-    this.program = ts.createProgram([this.rootModule], tsConfig.compilerOptions, compilerHost);
+    this.program = ts.createProgram([this.rootModule + '.ts'], tsConfig.compilerOptions, compilerHost);
+
+    console.log("done creating the program");
+
+    const basePath = process.cwd();
 
     //options for codegen
     const ngcOptions:ngCompiler.AngularCompilerOptions = {
-			genDir: path.resolve(plugin.options.appRoot, '@@ngfactory'),
+			genDir: ngcConfig.genDir,
 			rootDir: tsConfig.compilerOptions.rootDir,
-			basePath: plugin.options.appRoot,
+			basePath: basePath,
 			skipMetadataEmit: true,
 			skipDefaultLibCheck: true,
 			skipTemplateCodegen: false,
@@ -80,14 +82,12 @@ export class NgcWebpackPlugin {
       i18nFile: undefined,
       i18nFormat: undefined,
       locale: undefined,
-      basePath: plugin.options.appRoot
+      basePath: basePath
     }
 
      this.reflectorHost = new ngCompiler.ReflectorHost(this.program, compilerHost, ngcOptions);
      this.reflector = new ngCompiler.StaticReflector(this.reflectorHost);
-
      this.codeGeneratorFactory = createCodeGenerator({ngcOptions, i18nOptions, compilerHost, resourceLoader: undefined});
-
   }
 
   //registration hook for webpack plugin
@@ -100,26 +100,35 @@ export class NgcWebpackPlugin {
   }
 
   private _make(compilation, cb){
+    //TODO: vsavkin verify that the last param is not needed
 
-    const entryModule = this.reflectorHost.findDeclaration(this.rootModule, this.rootModuleName, undefined);
+    const entryModule = this.reflectorHost.findDeclaration("./" + this.rootModule, this.rootModuleName, "/Users/vsavkin/projects/angular-cli/packages/webpack/test/index.ts");
+
+    //TODO: vsavkin find the right annotation instead of taking the last one
+
+    console.log("REFLECT", global.Reflect)
     const entryNgModuleMetadata = this.reflector.annotations(entryModule).pop();
+    // console.log("CCC", this.reflector.annotations(entryModule).length)
 
-    const entryModules = entryNgModuleMetadata.imports
-      .filter(importRec => importRec.ngModule && importRec.ngModule.name === 'RouterModule')
-      .map(routerModule => routerModule.providers)
+    // //TODO vsavkin scan providers and imports
+    // const entryModules = entryNgModuleMetadata.imports
+    //   .filter(importRec => importRec.ngModule && importRec.ngModule.name === 'RouterModule')
+    //   .map(routerModule => routerModule.providers)
 
-
-    debug(`ngc: building from ${entryModule.name}`)
-
-    this.codeGeneratorFactory(this.program)
-      .forEach(v => console.log(v.fileName))
-      .then(
-        () => cb(),
-        err => cb(err)
-      )
+    // //TODO given the opaque token (loadChidlren), can we get its filename?
 
 
+    // debug(`ngc: building from ${entryModule.name}`)
 
+    // this.codeGeneratorFactory(this.program)
+    //   .forEach(v => console.log(v.fileName))
+    //   .then(
+    //     () => cb(),
+    //     err => cb(err)
+    //   )
+
+
+    cb();
 
   }
 
@@ -135,12 +144,16 @@ export class NgcWebpackPlugin {
    this._run(watcher.compiler, cb);
 	}
 
-  private _readConfig(tsConfigPath){
+  private _readConfig(tsConfigPath): any {
     let {config, error} = ts.readConfigFile(tsConfigPath, ts.sys.readFile);
     if(error){
       throw error;
     }
-    return config;
+    // TODO: vsavkin add error handling
+    return {
+      compilerOptions: ts.parseJsonConfigFileContent(config, new ParseConfigHost(), "").options,
+      angularCompilerOptions: config.angularCompilerOptions
+    }
   }
 
 	private _compile(params){
@@ -154,3 +167,17 @@ export class NgcWebpackPlugin {
   }
 }
 
+class ParseConfigHost implements ts.ParseConfigHost {
+  useCaseSensitiveFileNames: boolean = true;
+
+  readDirectory(rootDir: string, extensions: string[], excludes: string[], includes: string[]): string[] {
+    return ts.sys.readDirectory(rootDir, extensions, excludes, includes);
+  }
+  /**
+    * Gets a value indicating whether the specified path exists and is a file.
+    * @param path The path to test.
+    */
+  fileExists(path: string): boolean {
+    return ts.sys.fileExists(path);
+  }
+}
