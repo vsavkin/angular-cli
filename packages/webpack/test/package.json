@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "performance-now": "^0.2.0",
-    "typescript": "2.0.2"
+    "typescript": "2.0.2",
+    "webpack": "2.1.0-beta.22"
   }
 }

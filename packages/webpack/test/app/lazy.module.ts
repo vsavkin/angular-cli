@@ -7,3 +7,5 @@ import {RouterModule} from '@angular/router'
   ]
 })
 export class LazyModule {}
+
+export class SecondModule {}

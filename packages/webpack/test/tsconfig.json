@@ -17,9 +17,7 @@
   },
   "files": [
     "app/app.module.ts",
-    "app/app.component.ts",
-    "app/main.jit.ts",
-    "app/main.aot.ts"
+    "app/lazy.module.ts"
   ],
   "angularCompilerOptions": {
     "genDir": "app/ngfactory",
