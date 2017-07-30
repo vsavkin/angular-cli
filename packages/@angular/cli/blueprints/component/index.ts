@@ -238,7 +238,10 @@ export default Blueprint.extend({
     const returns: Array<any> = [];
     const className = stringUtils.classify(`${options.entity.name}Component`);
     const fileName = stringUtils.dasherize(`${options.entity.name}.component`);
-    const componentDir = path.relative(path.dirname(this.pathToModule), this.generatePath);
+
+    // PATCH
+    const fullGeneratePath = path.join(this.project.root, this.generatePath);
+    const componentDir = path.relative(path.dirname(this.pathToModule), fullGeneratePath);
     const normalizeRelativeDir = componentDir.startsWith('.') ? componentDir : `./${componentDir}`;
     const importPath = componentDir ? `${normalizeRelativeDir}/${fileName}` : `./${fileName}`;
 
