@@ -13,6 +13,7 @@ import { DynamicPathOptions, dynamicPathParser } from '../utilities/dynamic-path
 import { getAppFromConfig } from '../utilities/app-utils';
 import * as path from 'path';
 import { SchematicAvailableOptions } from '../tasks/schematic-get-options';
+import {execSync} from 'child_process';
 
 const Command = require('../ember-cli/lib/models/command');
 const SilentError = require('silent-error');
@@ -184,7 +185,15 @@ export default Command.extend({
         workingDir: cwd,
         collectionName,
         schematicName
-      });
+    }).then(() => {
+      // TODO: this should land in the CLI properly soon (this is an temp fix)
+      const postGenerate = CliConfig.getValue('defaults.schematics.postGenerate');
+      if (postGenerate) {
+        try {
+          execSync(postGenerate);
+        } catch (e) {}
+      }
+    });
   },
 
   printDetailedHelp: function (_options: any, rawArgs: any): string | Promise<string> {

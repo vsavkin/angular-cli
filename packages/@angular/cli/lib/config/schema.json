@@ -562,6 +562,10 @@
               "items": {
                 "type": "string"
               }
+            },
+            "postGenerate": {
+              "description": "Run a command after generate.",
+              "type": "string"
             }
           },
           "additionalProperties": false
